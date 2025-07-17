@@ -29,7 +29,7 @@ jobs:
         with:
           repository: kylemaps/log-pong-config # Replace with your config repo name
           path: log-pong-config
-          token: ${{ secrets.GH_PAT }} # Use the PAT here
+          token: ${{ secrets.GH_PAT_90_D }} # Use the PAT here
 
       - name: Update Image Tag
         run: |
