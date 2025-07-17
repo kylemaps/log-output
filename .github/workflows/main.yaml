@@ -1,0 +1,45 @@
+name: Build and Deploy Log-Output App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Application Code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/log-output-app:${{ github.sha }} .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/log-output-app:${{ github.sha }}
+
+      - name: Checkout Configuration Repo
+        uses: actions/checkout@v4
+        with:
+          repository: kylemaps/log-pong-config # Replace with your config repo name
+          path: log-pong-config
+          token: ${{ secrets.GH_PAT }} # Use the PAT here
+
+      - name: Update Image Tag
+        run: |
+          sed -i 's|image: .*log-output.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/log-output-app:${{ github.sha }}|g' log-pong-config/manifests/deployment.yaml
+
+      - name: Commit and Push Changes
+        run: |
+          cd log-pong-config
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .
+          git commit -m "Update image for log-output-app to ${{ github.sha }}" || echo "No changes to commit"
+          git push
