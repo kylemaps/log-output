@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3002;
 // Paths to shared file and ConfigMap-mounted file
 const SHARED_FILE_PATH = '/usr/src/app/files/timestamp.txt';
 const CONFIG_FILE_PATH = '/usr/src/app/data/information.txt';
-const PINGPONG_URL = 'http://pingpong-svc:3001/ping';
+const PINGPONG_URL = 'http://pingpong-svc:3001/ping'; //this should be an ENV variable ideally
 const MESSAGE = process.env.MESSAGE;
 
 app.use(async (ctx, next) => {

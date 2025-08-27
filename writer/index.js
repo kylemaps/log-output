@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-// Path to shared file
+// Path to shared file.
 const SHARED_FILE_PATH = '/usr/src/app/files/timestamp.txt';
 
 function writeTimestamp() {

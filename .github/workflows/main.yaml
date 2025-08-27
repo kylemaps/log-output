@@ -1,4 +1,4 @@
-name: Build and Deploy Log-Output App
+name: Build and Deploy Log-Output Apps
 
 on:
   push:
@@ -19,21 +19,33 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and Push Docker Image
+      - name: Build and Push Reader Docker Image
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/log-output-app:${{ github.sha }} .
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/log-output-app:${{ github.sha }}
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/log-output:${{ github.sha }} ./reader
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/log-output:${{ github.sha }}
+
+      - name: Build and Push Writer Docker Image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/log-output-writer:${{ github.sha }} ./writer
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/log-output-writer:${{ github.sha }}
 
       - name: Checkout Configuration Repo
         uses: actions/checkout@v4
         with:
-          repository: kylemaps/log-pong-config # Replace with your config repo name
+          repository: kylemaps/log-pong-config
           path: log-pong-config
-          token: ${{ secrets.GH_PAT_90_D }} # Use the PAT here
+          token: ${{ secrets.GH_PAT_90_D }}
 
-      - name: Update Image Tag
+      - name: Setup Kustomize
         run: |
-          sed -i 's|image: .*log-output.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/log-output-app:${{ github.sha }}|g' log-pong-config/manifests/deployment.yaml
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
+          sudo mv kustomize /usr/local/bin/
+
+      - name: Update Image Tags using Kustomize
+        run: |
+          cd log-pong-config
+          kustomize edit set image kylmps/log-output=${{ secrets.DOCKERHUB_USERNAME }}/log-output:${{ github.sha }}
+          kustomize edit set image kylmps/log-output-writer=${{ secrets.DOCKERHUB_USERNAME }}/log-output-writer:${{ github.sha }}
 
       - name: Commit and Push Changes
         run: |
@@ -41,5 +53,5 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add .
-          git commit -m "Update image for log-output-app to ${{ github.sha }}" || echo "No changes to commit"
+          git commit -m "Update image tags for log-output apps to ${{ github.sha }}" || echo "No changes to commit"
           git push
